@@ -19,20 +19,27 @@
 #  MA 02110-1301, USA.
 #
 
+from CGRdb.models import load_tables
 
 class MoleculeSearch(object):
     @classmethod
     def structure_exists(cls, structure):
-        pass
+        structure_exists = cls.get_fear(structure)
+        if structure_exists:
+            return MoleculeSearch.find_structure(cls,structure)
+        return False
+
 
     @classmethod
     def find_structure(cls, structure):
-        pass
+        return cls.get_fear(structure)
+
+
 
 
 class ReactionSearch(object):
     @classmethod
-    def mapless_exists(cls, structure):
+    def mapless_exists(cls, structure): #структура самой реакции
         fresh = cls.refresh_reaction(structure)
         if fresh:
             return cls.exists(mapless_fear=cls.get_mapless_fear(fresh))
@@ -47,4 +54,6 @@ class ReactionSearch(object):
 
     @classmethod
     def find_structure(cls, structure):
+        return
         pass
+
