@@ -20,26 +20,28 @@
 #
 
 from CGRdb.models import load_tables
+from pony.orm import Set, Json, buffer, left_join
+from functools import reduce
+
 
 class MoleculeSearch(object):
     @classmethod
     def structure_exists(cls, structure):
-        structure_exists = cls.get_fear(structure)
+        structure_exists = cls.exist(fear = cls.get_fear(structure))
         if structure_exists:
             return MoleculeSearch.find_structure(cls,structure)
         return False
 
-
     @classmethod
     def find_structure(cls, structure):
-        return cls.get_fear(structure)
+        return cls.get(fear = cls.get_fear(structure))
 
 
 
 
 class ReactionSearch(object):
     @classmethod
-    def mapless_exists(cls, structure): #структура самой реакции
+    def mapless_exists(cls, structure):
         fresh = cls.refresh_reaction(structure)
         if fresh:
             return cls.exists(mapless_fear=cls.get_mapless_fear(fresh))
@@ -53,7 +55,37 @@ class ReactionSearch(object):
         return False
 
     @classmethod
-    def find_structure(cls, structure):
-        return
-        pass
+    def find_reaction(cls,structure):
+        return cls.get(fear=cls.get_fear(structure))
 
+    @classmethod
+    def find_reactions_by_molecule(cls,structure, product=None):
+        if product is None:
+            q = left_join(
+                r for m in Molecules if m.fear == cls.get_fear(structure) for rs in m.reactions for r in
+                rs.reactions)
+        else:
+            q = left_join(r for m in Molecules if m.fear == cls.get_fear(structure) for rs in m.reactions if
+                          rs.product == product for r in rs.reactions)
+        return list(q)
+
+    @classmethod
+    def find_reactions_by_molecules(cls,product=None, reagent=None):
+        d = dict()
+        if product is not None:
+            for i in product:
+                d[i] = set()
+            for m, r in left_join(
+                    (m.fear, r) for m in Molecules if m.fear in [cls.get_fear(x) for x in product] for rs in
+                    m.reactions if rs.product for r in rs.reactions):
+                d[m].add(r)
+
+        if reagent is not None:
+            for i in reagent:
+                d[i] = set()
+            for m, r in left_join(
+                    (m.fear, r) for m in Molecules if m.fear in [cls.get_fear(x) for x in reagent] for rs in
+                    m.reactions if not rs.product for r in rs.reactions):
+                d[m].add(r)
+
+        return reduce(set.intersection, d.values())
