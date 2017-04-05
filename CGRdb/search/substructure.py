@@ -18,12 +18,20 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 #
+from CGRtools.CGRreactor import CGRreactor
 
 
 class MoleculeSearch(object):
     @classmethod
-    def find_substructures(cls, structures):
-        pass
+    def find_substructures(cls, structure):
+        res = []
+        cgrr = CGRreactor()
+        for se in cls.find_similar(structure):
+            gm = cgrr.get_cgr_matcher(se.structure_raw, structure)
+            if gm.subgraph_is_isomorphic():
+                res.append(se)
+
+        return res
 
 
 class ReactionSearch(object):
