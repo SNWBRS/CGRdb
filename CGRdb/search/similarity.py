@@ -54,4 +54,5 @@ class Similarity(object):
 
     @classmethod
     def find_similar(cls, structures):
+
         pass
