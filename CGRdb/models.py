@@ -357,10 +357,9 @@ def load_tables(db, schema, user_entity):
             fear_string = Molecule.get_fear(cgr)
             return (fear_string, cgr) if get_cgr else fear_string
 
-        @staticmethod
-        def get_fear_classes(self, g, atoms):
-            atoms=fear.get_center_atoms(g)
-            reaction_center=fear.get_environment(g, atoms)
+        def get_fear_classes(self):
+            atoms=fear.get_center_atoms(self.cgr)
+            reaction_center=fear.get_environment(self.cgr, atoms)
             rc_list=[]
             for i in connected_component_subgraphs(reaction_center):
                 rc_list.append(Molecule.get_fear(i))
