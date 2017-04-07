@@ -44,14 +44,13 @@ class Similarity(object):
             with open(cls_path, 'wb') as f:
                 pickle.dump((tree, ids), f)
 
-            if tree:
-                cls.__cached_tree[cls.__name__] = tree
-            else:
-                with open(cls_path, 'rb') as f:
-                    tree = pickle.load(f)
+            cls.__cached_tree[cls.__name__] = (tree, ids)
+
+        else:
+            with open(cls_path, 'rb') as f:
+                cls.__cached_tree[cls.__name__] = pickle.load(f)
 
     __cached_tree = {}
-
 
     @classmethod
     def find_similar(cls, structures):
