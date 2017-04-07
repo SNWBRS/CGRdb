@@ -21,7 +21,7 @@
 from collections import OrderedDict
 from datetime import datetime
 from pony.orm import PrimaryKey, Required, Optional, Set, Json, db_session
-from networkx import relabel_nodes
+from networkx import relabel_nodes, connected_component_subgraphs
 from bitstring import BitArray
 from itertools import count
 from networkx.readwrite.json_graph import node_link_graph, node_link_data
@@ -247,6 +247,9 @@ def load_tables(db, schema, user_entity):
         molecules = Set('MoleculeReaction')
         conditions = Set('Conditions')
         special = Optional(Json)
+        # FEAR - классификаторы
+        # словарь {"FEAR":list[fear_strings]}
+        # На основе реакции возраващает список уникальных строк
 
         def __init__(self, structure, user, conditions=None, special=None, fingerprint=None, fear_string=None,
                      mapless_fear_string=None, cgr=None, substrats_fears=None, products_fears=None):
@@ -355,6 +358,15 @@ def load_tables(db, schema, user_entity):
             return (fear_string, cgr) if get_cgr else fear_string
 
         @staticmethod
+        def get_fear_classes(self, g, atoms):
+            atoms=fear.get_center_atoms(g)
+            reaction_center=fear.get_environment(g, atoms)
+            rc_list=[]
+            for i in connected_component_subgraphs(reaction_center):
+                rc_list.append(Molecule.get_fear(i))
+            return  rc_list
+
+        @staticmethod
         def get_mapless_fear(structure, is_merged=False, get_merged=False):
             merged = structure if is_merged else cgr_core.merge_mols(structure)
             fear_string = '%s>>%s' % (Molecule.get_fear(merged['substrats']), Molecule.get_fear(merged['products']))
@@ -422,6 +434,13 @@ def load_tables(db, schema, user_entity):
                 date = datetime.utcnow()
             db.Entity.__init__(self, user_id=user.id, date=date, reaction=reaction, data=data)
 
+    class ReactionClass(db.Entity):
+        _table_ = '%s_ReactionClass' % schema if DEBUG else (schema, 'conditions')
+        id = PrimaryKey(int, auto=True)
+        reactions = Set('Reaction')
+
     Molecule.load_tree()
     Reaction.load_tree()
     return Molecule, Reaction, Conditions
+
+
