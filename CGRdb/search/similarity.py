@@ -19,17 +19,40 @@
 #  MA 02110-1301, USA.
 #
 
+import numpy as np
+import pickle
+from sklearn.neighbors import BallTree
+from pony.orm import select
+from os import path
+
+dump_dir = ':C'
 
 class Similarity(object):
     @classmethod
     def load_tree(cls, reindex=False):
+        cls_path = path.join(dump_dir, '%s.bin' % cls.__name__)
+
         if reindex or cls.__name__ not in cls.__cached_tree:
-            tree = loader()
-            if tree:
-                cls.__cached_tree[cls.__name__] = tree
+            a = []
+            ids = []
+            for fp, i in select((s.fingerprint, s.id) for s in cls):
+                by_x = np.unpackbits(np.fromstring(fp, dtype=np.uint8))
+                a.append(by_x)
+                ids.append(i)
+
+            tree = BallTree(np.matrix(a), metric='jaccard')
+            with open(cls_path, 'wb') as f:
+                pickle.dump((tree, ids), f)
+
+            cls.__cached_tree[cls.__name__] = (tree, ids)
+
+        else:
+            with open(cls_path, 'rb') as f:
+                cls.__cached_tree[cls.__name__] = pickle.load(f)
 
     __cached_tree = {}
 
     @classmethod
     def find_similar(cls, structures):
+
         pass
